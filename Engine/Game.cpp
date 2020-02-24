@@ -42,5 +42,5 @@ void Game::UpdateModel()
 
 void Game::ComposeFrame()
 {
-    gfx.DrawSprite(wnd.mouse.GetPosX(), wnd.mouse.GetPosY(), {0,32,0,48},gfx.GetScreen(),surf);
+    gfx.DrawSprite(wnd.mouse.GetPosX(), wnd.mouse.GetPosY(), { 32,64,48,96 }, { 100,300,100,300 }, surf);
 }

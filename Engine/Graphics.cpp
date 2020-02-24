@@ -240,6 +240,8 @@ Graphics::Graphics( HWNDKey& key )
 		_aligned_malloc( sizeof( Color ) * Graphics::ScreenWidth * Graphics::ScreenHeight,16u ) );
 }
 
+
+
 Graphics::~Graphics()
 {
 	// free sysbuffer memory (aligned free)
@@ -321,27 +323,31 @@ void Graphics::PutPixel( int x,int y,Color c )
 	pSysBuffer[Graphics::ScreenWidth * y + x] = c;
 }
 
-void Graphics::DrawSprite( int x,int y,const Surface& s )
+void Graphics::DrawSpriteNoChroma( int x,int y,const Surface& s )
 {
-	//DrawSprite(x, y, srcRect, s);
+	DrawSpriteNoChroma(x, y, s.GetRect(), s);
 }
 
-void Graphics::DrawSprite(int x, int y, const RectI& srcRect, const Surface& s)
+void Graphics::DrawSpriteNoChroma(int x, int y, const RectI& srcRect, const Surface& s)
 {
-	DrawSprite(x,y, srcRect, s.GetRect(), s);
+	DrawSpriteNoChroma(x,y, srcRect, GetScreen(), s);
 }
 
-void Graphics::DrawSprite(int x, int y, RectI srcRect, const RectI& clip, const Surface& s)
+void Graphics::DrawSpriteNoChroma(int x, int y, RectI srcRect, const RectI& clip, const Surface& s)
 {
+	assert(srcRect.left >= 0);
+	assert(srcRect.right <= s.GetWidth());
+	assert(srcRect.top >= 0);
+	assert(srcRect.bottom <= s.GetHeight());
 	if (x<clip.left)
 	{
 		srcRect.left += clip.left - x;
-		//x = clip.left;
+		x = clip.left;
 	}
 	if (y < clip.top)
 	{
 		srcRect.top += clip.top - y;
-		//y = clip.top;
+		y = clip.top;
 	}
 	if (x+srcRect.GetWidth()> clip.right)
 	{
@@ -356,11 +362,56 @@ void Graphics::DrawSprite(int x, int y, RectI srcRect, const RectI& clip, const 
 	{
 		for (int sx = srcRect.left; sx < srcRect.right; sx++)
 		{
-			PutPixel(x + sx, y + sy, s.GetPixel(sx, sy));
+			PutPixel(x - srcRect.left +  sx, y -srcRect.top+ sy, s.GetPixel(sx, sy));
 		}
 	}
 }
+void Graphics::DrawSprite(int x, int y, const Surface& s, Color chroma)
+{
+	DrawSprite(x, y, s.GetRect(), s, chroma);
+}
 
+void Graphics::DrawSprite(int x, int y, const RectI& srcRect, const Surface& s, Color chroma)
+{
+	DrawSprite(x, y, srcRect, GetScreen(), s, chroma);
+}
+void Graphics::DrawSprite(int x, int y, RectI srcRect, const RectI& clip, const Surface& s, Color chroma)
+{
+	assert(srcRect.left >= 0);
+	assert(srcRect.right <= s.GetWidth());
+	assert(srcRect.top >= 0);
+	assert(srcRect.bottom <= s.GetHeight());
+	if (x < clip.left)
+	{
+		srcRect.left += clip.left - x;
+		x = clip.left;
+	}
+	if (y < clip.top)
+	{
+		srcRect.top += clip.top - y;
+		y = clip.top;
+	}
+	if (x + srcRect.GetWidth() > clip.right)
+	{
+		srcRect.right -= srcRect.GetWidth() + x - clip.right;
+	}
+	if (y + srcRect.GetHeight() > clip.bottom)
+	{
+		srcRect.bottom -= srcRect.GetHeight() + y - clip.bottom;
+	}
+
+	for (int sy = srcRect.top; sy < srcRect.bottom; sy++)
+	{
+		for (int sx = srcRect.left; sx < srcRect.right; sx++)
+		{
+			const Color srcPixel = s.GetPixel(sx, sy);
+			if (srcPixel != chroma)
+			{
+				PutPixel(x - srcRect.left + sx, y - srcRect.top + sy, srcPixel);
+			}
+		}
+	}
+}
 
 //////////////////////////////////////////////////
 //           Graphics Exception
