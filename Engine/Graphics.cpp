@@ -252,6 +252,11 @@ Graphics::~Graphics()
 	if( pImmediateContext ) pImmediateContext->ClearState();
 }
 
+RectI Graphics::GetScreen()
+{
+	return { 0, ScreenWidth, 0, ScreenHeight };
+}
+
 void Graphics::EndFrame()
 {
 	HRESULT hr;
@@ -318,13 +323,40 @@ void Graphics::PutPixel( int x,int y,Color c )
 
 void Graphics::DrawSprite( int x,int y,const Surface& s )
 {
-	const int width = s.GetWidth();
-	const int height = s.GetHeight();
-	for( int sy = 0; sy < height; sy++ )
+	//DrawSprite(x, y, srcRect, s);
+}
+
+void Graphics::DrawSprite(int x, int y, const RectI& srcRect, const Surface& s)
+{
+	DrawSprite(x,y, srcRect, s.GetRect(), s);
+}
+
+void Graphics::DrawSprite(int x, int y, RectI srcRect, const RectI& clip, const Surface& s)
+{
+	if (x<clip.left)
 	{
-		for( int sx = 0; sx < width; sx++ )
+		srcRect.left += clip.left - x;
+		//x = clip.left;
+	}
+	if (y < clip.top)
+	{
+		srcRect.top += clip.top - y;
+		//y = clip.top;
+	}
+	if (x+srcRect.GetWidth()> clip.right)
+	{
+		srcRect.right -= srcRect.GetWidth() + x - clip.right;
+	}
+	if (y+ srcRect.GetHeight()> clip.bottom)
+	{
+		srcRect.bottom -= srcRect.GetHeight() + y - clip.bottom;
+	}
+
+	for (int sy = srcRect.top; sy < srcRect.bottom; sy++)
+	{
+		for (int sx = srcRect.left; sx < srcRect.right; sx++)
 		{
-			PutPixel( x + sx,y + sy,s.GetPixel( sx,sy ) );
+			PutPixel(x + sx, y + sy, s.GetPixel(sx, sy));
 		}
 	}
 }
